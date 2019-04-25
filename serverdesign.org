@@ -1,0 +1,25 @@
+#+TITLE: TCP Synchronous Server Design
+
+* TcpResult struct
+  
+  the message gotten from TCP client
+  msg : vector<unsigned char>
+
+  the hostname/IP of TCP client. idk which
+  from : string
+
+* TcpServer class
+
+  
+** Methods
+   
+   Listen()
+
+   Synchronously listen for connection, return result struct
+   should be called in an infinite loop
+   
+  
+* ProxyServer class
+
+  Decorator for TcpServer
+  Has a TcpClient too
