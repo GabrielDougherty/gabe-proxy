@@ -1,25 +1,111 @@
 #+TITLE: TCP Synchronous Server Design
+#+OPTIONS: toc:nil html-postamble:nil
 
 * TcpResult struct
   
   the message gotten from TCP client
+
   msg : vector<unsigned char>
 
   the hostname/IP of TCP client. idk which
+
   from : string
 
 * TcpServer class
 
   
 ** Methods
-   
-   Listen()
 
-   Synchronously listen for connection, return result struct
-   should be called in an infinite loop
-   
+*** constructor(int port)
+
+	Setup TCP connection by binding to socket on given port
+
+*** destructor
+
+	cleanup sockets
+	   
+*** Listen(function<void(int,TcpResult)> response)
+
+	Synchronously listen for connection, calls response function when packet received
+
+** Fixes
+
+   - Make fewer things properties
+   - Use exceptions instead of exit calls
+   - Fix buffer not resizing properly
+
+* TcpClient class
+
+  or maybe HTTP client...
+
+  basically I need a way to fetch the desired stuff. I can probably just slightly alter the client's request by changing the URI, and then forward it to the TcpClient.
+
   
+** Methods
+
+*** vector<unsigned char> Request(string host, int port)
+
+	Return response from host at port.
+
 * ProxyServer class
 
-  Decorator for TcpServer
-  Has a TcpClient too
+  Uses TcpServer and TcpClient for proxying, along with a cache layer
+  
+** Methods
+
+*** ProxyServer(TcpServer*)
+
+	Takes instance of TcpServer constructed with desired port to listen on
+   
+*** Listen()
+
+	Runs the proxy
+
+	
+*** SendResponse(int, int, vector<unsigned char>&)
+
+  Has a simple function for sending response to TCP client with send() too that forks(), something like:
+
+  #+BEGIN_SRC C++
+if (!fork()) { // this is the child process
+	close(sockfd); // child doesn't need the listener
+
+	string msgStr;
+	for (auto& c: result.msg)
+		msgStr += c;
+		string msg = "When you say " + msgStr + " I say yoo\n";
+	if (send(new_fd, &result.msg[0], result.msg.size(), 0) == -1)
+		perror("send");
+	close(new_fd);
+	exit(0);
+}
+
+  #+END_SRC
+
+
+* WebCache class
+
+  
+** How it works
+
+   Simple class to cache webpages. User of class should check if cache contains item before inserting or getting it. Full URL of webpage is used as unique resource identifier.
+   
+** Methods
+
+*** constructor(string path)
+
+	Initialize with the path to write cached files to. If there are already cached files in the directory, load them in.
+
+*** bool Contains(string url)
+
+	Whether the cache contains the resource identified by the full url.
+
+	
+*** vector<unsigned char> Get(string url)
+
+	Reads entire cached file into memory and returns it
+
+	
+*** void Set(string url, vector<unsigned char>& resource)
+
+	Store resource from url. Access it again with URL.

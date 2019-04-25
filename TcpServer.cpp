@@ -1,17 +1,20 @@
-#include "TcpServer.h" // TODO
+#include "TcpServer.h"
 
 using namespace std;
 
 
 // Synchronous TCP server
 
-TcpServer::TcpServer() {
+// input: server port #
+TcpServer::TcpServer(const int serverPort) {
+	const char* cServerPort = to_string(serverPort).c_str(); 
+
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE; // use my IP
 
-	if ((rv = getaddrinfo(NULL, SERVPORT, &hints, &servinfo)) != 0) {
+	if ((rv = getaddrinfo(NULL, cServerPort, &hints, &servinfo)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
 		throw 1;
 	}
@@ -67,7 +70,7 @@ TcpServer::~TcpServer() {
 // response: function that takes as input
 //     a socket for sending
 //     a TcpResult
-void TcpServer::Listen(function<void(const int, const TcpResult&)> response) {
+void TcpServer::Listen(function<void(int, int, const TcpResult&)> response) {
 	TcpResult result;
 	result.msg.resize(MAXBUFLEN);
 
@@ -85,7 +88,7 @@ void TcpServer::Listen(function<void(const int, const TcpResult&)> response) {
 			perror("recv");
 			exit(1);
 		}
-		
+		result.msg.resize(numbytes);
 
 		inet_ntop(their_addr.ss_family,
 				  get_in_addr((struct sockaddr *)&their_addr),
@@ -93,15 +96,10 @@ void TcpServer::Listen(function<void(const int, const TcpResult&)> response) {
 		printf("server: got connection from %s\n", s);
 		
 
-		response(new_fd, result);
+		result.from = s;
 
-		if (!fork()) { // this is the child process
-			close(sockfd); // child doesn't need the listener
-			if (send(new_fd, "Hello, world!", 13, 0) == -1)
-				perror("send");
-			close(new_fd);
-			exit(0);
-		}
+		response(sockfd, new_fd, result);
+
 		close(new_fd);  // parent doesn't need this
 	}
 }

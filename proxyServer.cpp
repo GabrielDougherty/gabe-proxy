@@ -1,13 +1,16 @@
+#include <sstream>
 #include <iostream>
+#include <memory>
 #include "TcpServer.h"
+#include "ProxyServer.h"
 
 using namespace std;
 
 int main() {
-	TcpServer serv;
-	serv.Listen([](const int new_fd, const TcpResult& result) {
-					for (auto& c: result.msg)
-						cout << c;
-					cout << endl;
-				});
+	const int SERVPORT = 4950;
+	// TcpServer serv(SERVPORT);
+
+	auto tcpServ = make_unique<TcpServer>(SERVPORT);
+	ProxyServer serv(tcpServ.get());
+	serv.Listen();
 }

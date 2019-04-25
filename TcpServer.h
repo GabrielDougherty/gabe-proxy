@@ -23,14 +23,13 @@ struct TcpResult {
 
 class TcpServer {
 public:
-	TcpServer();
-	~TcpServer();
-	void Listen(std::function<void(const int, const TcpResult&)>);
+	TcpServer(int);
+	virtual ~TcpServer();
+	virtual void Listen(std::function<void(int, int, const TcpResult&)>);
 
 private:
 	const unsigned int MAXBUFLEN = 100;
 	const unsigned int BACKLOG = 10;
-	const char *SERVPORT = "4950";
 	int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
 	struct addrinfo hints, *servinfo, *p;
 	struct sockaddr_storage their_addr; // connector's address information
