@@ -47,6 +47,12 @@
 
 	Return response from host at port.
 
+	
+* TcpMsg struct
+
+  host: destination of TCP message
+  msg: contents of TCP message
+
 * ProxyServer class
 
   Uses TcpServer and TcpClient for proxying, along with a cache layer
@@ -61,7 +67,12 @@
 
 	Runs the proxy
 
-	
+*** TcpMsg DeproxifyMsg(vector<unsigned char> buf)
+
+	Takes in a TCP request from the client of the proxy and builds a TCP response for the destination server, along with extracting the destination.
+
+	Example: takes in GET /gabe.com/index.html and spits out a TcpMsg with msg="GET /index.html" and host="gabe.com"
+
 *** SendResponse(int, int, vector<unsigned char>&)
 
   Has a simple function for sending response to TCP client with send() too that forks(), something like:
