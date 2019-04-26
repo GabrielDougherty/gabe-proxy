@@ -55,7 +55,10 @@ vector<unsigned char> TcpClient::Request(const TcpMsg& tcpMsg, int port) {
 	tmpBuf.resize(MAXBUFLEN);
 
 	while ((numbytes = recv(sockfd, &tmpBuf[0], tmpBuf.size(), 0)) > 0) {
-		buf.insert(begin(buf),begin(tmpBuf),end(tmpBuf));
+		tmpBuf.resize(numbytes);
+		buf.insert(end(buf),begin(tmpBuf),end(tmpBuf));
+		tmpBuf.clear();
+		tmpBuf.resize(MAXBUFLEN);
 	}
 
 	if (numbytes == -1) {

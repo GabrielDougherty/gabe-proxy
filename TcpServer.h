@@ -27,9 +27,9 @@ public:
 	virtual ~TcpServer();
 	virtual void Listen(std::function<void(int, int, const TcpResult&)>);
 
+	static const unsigned int MAXBUFLEN = 4096;
+	static const unsigned int BACKLOG = 10;
 private:
-	const unsigned int MAXBUFLEN = 100;
-	const unsigned int BACKLOG = 10;
 	int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
 	struct addrinfo hints, *servinfo, *p;
 	struct sockaddr_storage their_addr; // connector's address information

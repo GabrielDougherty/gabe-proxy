@@ -19,7 +19,16 @@ void ProxyServer::Listen() {
 
 						   TcpMsg filteredMsg = DeproxifyMsg(result.msg);
 
+						   cout << "FILTERED:" << endl;
+						   cout << "filteredMsg.host: " << filteredMsg.host 
+								<< endl;
+						   for (auto& c: filteredMsg.msg)
+							   cout << c;
+						   cout << endl;
+
+
 						   auto buf = _tcpClient->Request(filteredMsg, 80);
+
 
 						   SendResponse(sockfd, new_fd, buf);
 					   });
@@ -42,11 +51,28 @@ TcpMsg ProxyServer::DeproxifyMsg(const vector<unsigned char>& buf) {
 	if (!regex_match(begin(httpMethod), end(httpMethod), httpGet))
 		throw 1;
 
-	// Check whether GET URL has a follwing path
 	bufStream >> url;
 	regex urlMatch(url);
 
-	regex justHost("^/.*/.*$");
+	if (url == "/"s)
+		throw 1;
+
+	// remove leading '/' or leading http:// (this is fairly fragile)
+	regex httpLeaderMatch("^/?http://.*$");
+	regex slashLeaderMatch("^/.*$");
+	if (regex_match(begin(url), end(url), httpLeaderMatch)) {
+		regex httpLeader("http://");
+		url = regex_replace(url, httpLeader, ""s);
+		if (regex_match(begin(url), end(url), slashLeaderMatch))
+			url.erase(begin(url));
+	} else if (regex_match(begin(url), end(url), slashLeaderMatch)) {
+		url.erase(begin(url));
+	}  else {
+		throw ""; // malformed request
+	}
+
+	// Check whether GET URL has a trailing path
+	regex justHost("^.*/.*$");
 	std::string replaced;
 	if (regex_match(begin(url), end(url), justHost)) {
 		std::stringstream pathStream(url);
@@ -55,19 +81,16 @@ TcpMsg ProxyServer::DeproxifyMsg(const vector<unsigned char>& buf) {
 
 		using std::getline;
 
-		pathStream.get(); // discard first '/'
 		getline(pathStream, tcpMsg.host, '/');
 		getline(pathStream, urlPath);
 
 		replaced = regex_replace(bufString, urlMatch, "/"s + urlPath);
 	} else {
-		tcpMsg.host = string(begin(url)+1,end(url)); // discard first '/'
-
-
 		replaced = regex_replace(bufString, urlMatch, "/"s);
 	}
-	regex hostMatch("^Host:.*$");
-	replaced = regex_replace(replaced, hostMatch, "Host: " + tcpMsg.host);
+	regex hostMatch("\nHost:.*\r");
+	replaced = regex_replace(replaced, hostMatch, "\nHost: "s + tcpMsg.host
+							 + "\r"s);
 	tcpMsg.msg = vector<unsigned char>(begin(replaced), end(replaced));
 
 
@@ -81,9 +104,14 @@ void ProxyServer::SendResponse(const int sockfd,
 	if (!fork()) { // this is the child process
 		close(sockfd); // child doesn't need the listener
 
-		// TODO: change from simple echo
-		if (send(new_fd, &msg[0], msg.size(), 0) == -1)
-			perror("send");
+
+		for (size_t i = 0; i < msg.size(); i += TcpClient::MAXBUFLEN) {
+			// size_t sendSize = std::min((msg.size()-i), 
+			// 				  static_cast<size_t>(TcpClient::MAXBUFLEN));
+			if (send(new_fd, &msg[i], msg.size()-i, 0) == -1)
+				perror("send");
+		}
+
 		close(new_fd);
 		exit(0);
 	}

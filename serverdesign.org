@@ -47,7 +47,8 @@
 
 	Return response from host at port.
 
-	
+** Changes
+   Need to accept any length request, reading from buffer. Can still set an overall limit too I guess. Or maybe 4096 size is ok. Need to think about it
 * TcpMsg struct
 
   host: destination of TCP message
@@ -77,6 +78,8 @@
 ** Design changes
 
    Consider building a new GET request from scratch to forgo regex_replace
+
+   Definitely change SendResponse() so that it sends chunks at a time of 
 
 *** SendResponse(int, int, vector<unsigned char>&)
 

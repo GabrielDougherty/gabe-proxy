@@ -20,7 +20,7 @@ public:
 	std::vector<unsigned char> Request(const TcpMsg&, int);
 	// get sockaddr, IPv4 or IPv6:
 	static void *get_in_addr(struct sockaddr *sa);
-private:
-	const int MAXBUFLEN = 4096;
+
+	static const int MAXBUFLEN = 4096;
 };
 
