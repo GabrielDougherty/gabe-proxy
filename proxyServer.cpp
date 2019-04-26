@@ -17,11 +17,4 @@ int main() {
 					 tcpClient.get());
 	serv.Listen();
 
-	// TcpClient client;
-	// TcpMsg req;
-	// req.host = "www.edinboro.edu";
-	// string msg ("GET / HTTP/1.1\r\nHost: www.edinboro.edu\r\n\r\n");
-	// req.msg = vector<unsigned char>(begin(msg),end(msg));
-	// auto buf = client.Request(req,80);
-	// cout << string(begin(buf),end(buf)) << endl;
 }

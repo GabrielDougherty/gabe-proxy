@@ -8,31 +8,84 @@ ProxyServer::ProxyServer(TcpServer* serv,
 
 void ProxyServer::Listen() {
 	_tcpServer->Listen([this](const int sockfd, int new_fd,
-						  const TcpResult& result) {
+							  const TcpResult& result) {
 						   using std::cout;
 						   using std::endl;
+
+						   cout << "REQUEST FROM CLIENT:" << endl;
 
 						   for (auto& c: result.msg)
 							   cout << c;
 						   cout << endl;
-						   // TODO caching
 
 						   TcpMsg filteredMsg = DeproxifyMsg(result.msg);
 
-						   cout << "FILTERED:" << endl;
-						   cout << "filteredMsg.host: " << filteredMsg.host 
-								<< endl;
+						   cout << "SENDING TO HOST:" << filteredMsg.host << endl;
+
+						   cout << "SENDING REQUEST TO HOST:" << endl;
 						   for (auto& c: filteredMsg.msg)
 							   cout << c;
 						   cout << endl;
 
+						   cout << "DOING CACHE CHECK:" << endl;
 
-						   auto buf = _tcpClient->Request(filteredMsg, 80);
+						   auto buf = CacheOrRequest(filteredMsg);
 
+						   cout << "SENDING RESPONSE:" << endl;
 
 						   SendResponse(sockfd, new_fd, buf);
 					   });
 }
+
+vector<unsigned char> ProxyServer::CacheOrRequest(const TcpMsg& tcpRequest)
+{
+	std::string request(begin(tcpRequest.msg), end(tcpRequest.msg));
+	// check file md5 of request
+	unsigned char md5name[MD5_DIGEST_LENGTH];
+	vector<unsigned char> result;
+
+	MD5((unsigned char*)request.c_str(), request.size(), md5name);
+	
+	std::string sfname;
+	char buf[32];
+	for (int i=0;i<16;i++){
+		sprintf(buf, "%02x", md5name[i]);
+		sfname.append( buf );
+	}
+
+	auto fname = sfname.c_str();
+
+	std::fstream cacheFile;
+
+	std::cout << "Trying cache with " << fname << std::endl;
+	cacheFile.open(fname, std::ios::in | std::ios::binary);
+	if (cacheFile) {
+		std::cout << "Using cache" << std::endl;
+		
+		// unsigned char tmp;
+		// while (cacheFile >> tmp) {
+		// 	result.push_back(tmp);
+		// }
+
+		result = std::vector<unsigned char> 
+			((std::istreambuf_iterator<char>(cacheFile)),
+			 std::istreambuf_iterator<char>());
+
+	} else {
+		std::cout << "Requesting from remote HTTP server" << std::endl;
+
+		result = _tcpClient->Request(tcpRequest, 80);
+
+		cacheFile.open(fname, std::ios::out | std::ios::binary);
+
+		cacheFile.write((const char *)result.data(), result.size());
+
+		// for (auto& c : result)
+		// 	cacheFile << c;
+	}
+	return result;
+}
+
 
 TcpMsg ProxyServer::DeproxifyMsg(const vector<unsigned char>& buf) {
 	using std::regex;
