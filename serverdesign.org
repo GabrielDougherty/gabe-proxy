@@ -73,7 +73,10 @@
 
 	Example: takes in GET /gabe.com/index.html and spits out a TcpMsg with msg="GET /index.html" and host="gabe.com"
 
-	TODO: TcpMsg.msg also contains the target host destination, so the "Host:" part still needs to be replaced
+	
+** Design changes
+
+   Consider building a new GET request from scratch to forgo regex_replace
 
 *** SendResponse(int, int, vector<unsigned char>&)
 

@@ -5,15 +5,12 @@
 #include <sstream>
 #include <numeric>
 #include "TcpServer.h"
-
-struct TcpMsg {
-	std::vector<unsigned char> msg;
-	std::string host;
-};
+#include "TcpMsg.h"
+#include "TcpClient.h"
 
 class ProxyServer {
  public:
-	ProxyServer(TcpServer *serv);
+	ProxyServer(TcpServer*, TcpClient*);
 	void Listen();
  private:
 	/* static std::string CharVec2String(const std::vector<unsigned char>&); */
@@ -22,4 +19,5 @@ class ProxyServer {
 	static void SendResponse(const int, const int,
 							 const std::vector<unsigned char>&);
 	TcpServer* _tcpServer;
+	TcpClient* _tcpClient;
 };

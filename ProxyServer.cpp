@@ -2,10 +2,12 @@
 
 using std::vector;
 
-ProxyServer::ProxyServer(TcpServer* serv) : _tcpServer(serv) { }
+ProxyServer::ProxyServer(TcpServer* serv,
+						 TcpClient* client) :
+	_tcpServer(serv), _tcpClient(client) { }
 
 void ProxyServer::Listen() {
-	_tcpServer->Listen([](const int sockfd, int new_fd,
+	_tcpServer->Listen([this](const int sockfd, int new_fd,
 						  const TcpResult& result) {
 						   using std::cout;
 						   using std::endl;
@@ -13,11 +15,13 @@ void ProxyServer::Listen() {
 						   for (auto& c: result.msg)
 							   cout << c;
 						   cout << endl;
-						   // TODO do proxy request and caching
+						   // TODO caching
 
-						   TcpMsg testMsg = DeproxifyMsg(result.msg);
+						   TcpMsg filteredMsg = DeproxifyMsg(result.msg);
 
-						   SendResponse(sockfd, new_fd, testMsg.msg);
+						   auto buf = _tcpClient->Request(filteredMsg, 80);
+
+						   SendResponse(sockfd, new_fd, buf);
 					   });
 }
 
@@ -62,16 +66,13 @@ TcpMsg ProxyServer::DeproxifyMsg(const vector<unsigned char>& buf) {
 
 		replaced = regex_replace(bufString, urlMatch, "/"s);
 	}
+	regex hostMatch("^Host:.*$");
+	replaced = regex_replace(replaced, hostMatch, "Host: " + tcpMsg.host);
 	tcpMsg.msg = vector<unsigned char>(begin(replaced), end(replaced));
 
 
 	return tcpMsg;
 }
-
-// std::string CharVec2String(const vector<unsigned char>& buf) {
-// 	std::string result(begin(buf),end(buf));
-// 	return result;
-// }
 
 // send response back to client
 void ProxyServer::SendResponse(const int sockfd,
