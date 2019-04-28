@@ -69,6 +69,7 @@ TcpServer::~TcpServer() {
 
 // response: function that takes as input
 //     a socket for sending
+//     a socket for receiving
 //     a TcpResult
 void TcpServer::Listen(function<void(int, int, const TcpResult&)> response) {
 	TcpResult result;
@@ -84,7 +85,7 @@ void TcpServer::Listen(function<void(int, int, const TcpResult&)> response) {
 			continue;
 		}
 		int numbytes;
-		if ((numbytes = recv(new_fd, &result.msg[0], result.msg.size(), 0)) == -1) {
+		if ((numbytes = recv(new_fd, result.msg.data(), result.msg.size(), 0)) == -1) {
 			perror("recv");
 			exit(1);
 		}

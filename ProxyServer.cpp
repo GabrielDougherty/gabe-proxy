@@ -61,11 +61,6 @@ vector<unsigned char> ProxyServer::CacheOrRequest(const TcpMsg& tcpRequest)
 	cacheFile.open(fname, std::ios::in | std::ios::binary);
 	if (cacheFile) {
 		std::cout << "Using cache" << std::endl;
-		
-		// unsigned char tmp;
-		// while (cacheFile >> tmp) {
-		// 	result.push_back(tmp);
-		// }
 
 		result = std::vector<unsigned char> 
 			((std::istreambuf_iterator<char>(cacheFile)),
@@ -79,9 +74,6 @@ vector<unsigned char> ProxyServer::CacheOrRequest(const TcpMsg& tcpRequest)
 		cacheFile.open(fname, std::ios::out | std::ios::binary);
 
 		cacheFile.write((const char *)result.data(), result.size());
-
-		// for (auto& c : result)
-		// 	cacheFile << c;
 	}
 	return result;
 }

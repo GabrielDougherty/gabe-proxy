@@ -47,14 +47,14 @@ vector<unsigned char> TcpClient::Request(const TcpMsg& tcpMsg, int port) {
 
 	freeaddrinfo(servinfo); // all done with this structure
 
-	if (send(sockfd, &tcpMsg.msg[0], tcpMsg.msg.size(), 0) == -1)
+	if (send(sockfd, tcpMsg.msg.data(), tcpMsg.msg.size(), 0) == -1)
 		perror("send");
 
 
 	vector<unsigned char> tmpBuf;
 	tmpBuf.resize(MAXBUFLEN);
 
-	while ((numbytes = recv(sockfd, &tmpBuf[0], tmpBuf.size(), 0)) > 0) {
+	while ((numbytes = recv(sockfd, tmpBuf.data(), tmpBuf.size(), 0)) > 0) {
 		tmpBuf.resize(numbytes);
 		buf.insert(end(buf),begin(tmpBuf),end(tmpBuf));
 		tmpBuf.clear();
