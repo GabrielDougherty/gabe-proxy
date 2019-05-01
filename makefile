@@ -1,11 +1,11 @@
-CC=g++
-CXXFLAGS=-std=c++17 -Wall -Wpedantic -Wuninitialized -L/usr/lib -g -lcrypto
-
+CXX:=clang++
+CXXFLAGS:=-std=c++17 -Wall -Wpedantic -Wuninitialized -g -fPIC
+CXXFLAGSTARGET:=$(CXXFLAGS) -lcrypto
 
 all: proxyServer TcpServer.o ProxyServer.o TcpClient.o
 
 proxyServer: TcpServer.o ProxyServer.o TcpClient.o
-	g++ proxyServer.cpp *.o -L/usr/lib -lcrypto -o proxyServer
+	$(CXX) proxyServer.cpp *.o $(CXXFLAGSTARGET)
 
 ProxyServer.o: TcpServer.o
 
