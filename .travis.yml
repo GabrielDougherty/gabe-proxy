@@ -1,0 +1,10 @@
+language: cpp
+sudo: required
+dist: xenial
+compiler:
+- clang
+os:
+- linux
+before_install:
+- sudo apt install -y libssl-dev libcrypto++-dev
+script: make
