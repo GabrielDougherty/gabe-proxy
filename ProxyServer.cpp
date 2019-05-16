@@ -7,7 +7,7 @@ ProxyServer::ProxyServer(TcpServer* serv,
 	_tcpServer(serv), _tcpClient(client) { }
 
 void ProxyServer::Listen() {
-	_tcpServer->Listen([this](const int sockfd, int new_fd,
+	_tcpServer->Listen([this](const int sockFd, int newFd,
 							  const TcpResult& result) {
 						   using std::cout;
 						   using std::endl;
@@ -33,7 +33,7 @@ void ProxyServer::Listen() {
 
 						   cout << "SENDING RESPONSE:" << endl;
 
-						   SendResponse(sockfd, new_fd, buf);
+						   SendResponse(sockFd, newFd, buf);
 					   });
 }
 
@@ -102,18 +102,24 @@ TcpMsg ProxyServer::DeproxifyMsg(const vector<unsigned char>& buf) {
 	if (url == "/"s)
 		throw 1;
 
-	// remove leading '/' or leading http:// (this is fairly fragile)
-	regex httpLeaderMatch("^/?http://.*$");
+	// remove leading '/' and leading http:// (this is fairly fragile)
+	regex httpLeaderMatch("^http://.*$");
 	regex slashLeaderMatch("^/.*$");
+
+	bool malformedRequest = true;
+	if (regex_match(begin(url), end(url), slashLeaderMatch)) {
+		url.erase(begin(url));
+		malformedRequest = false;
+	}
 	if (regex_match(begin(url), end(url), httpLeaderMatch)) {
 		regex httpLeader("http://");
 		url = regex_replace(url, httpLeader, ""s);
 		if (regex_match(begin(url), end(url), slashLeaderMatch))
 			url.erase(begin(url));
-	} else if (regex_match(begin(url), end(url), slashLeaderMatch)) {
-		url.erase(begin(url));
-	}  else {
-		throw ""; // malformed request
+		malformedRequest = false;
+	}
+	if (malformedRequest) {
+		throw "";
 	}
 
 	// Check whether GET URL has a trailing path
@@ -131,12 +137,14 @@ TcpMsg ProxyServer::DeproxifyMsg(const vector<unsigned char>& buf) {
 
 		replaced = regex_replace(bufString, urlMatch, "/"s + urlPath);
 	} else {
+		tcpMsg.host = url;
 		replaced = regex_replace(bufString, urlMatch, "/"s);
 	}
 	regex hostMatch("\nHost:.*\r");
-	replaced = regex_replace(replaced, hostMatch, "\nHost: "s + tcpMsg.host
-							 + "\r"s);
-	tcpMsg.msg = vector<unsigned char>(begin(replaced), end(replaced));
+	std::string hostLine = regex_replace(replaced,
+										 hostMatch, "\nHost: "s + tcpMsg.host
+							 + "\r\n"s);
+	tcpMsg.msg = vector<unsigned char>(begin(hostLine), end(hostLine));
 
 
 	return tcpMsg;

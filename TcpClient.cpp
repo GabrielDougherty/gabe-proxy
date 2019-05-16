@@ -5,8 +5,8 @@ using std::vector;
 vector<unsigned char> TcpClient::Request(const TcpMsg& tcpMsg, int port) {
 	vector<unsigned char> buf;
 
-	int sockfd, numbytes;
-	struct addrinfo hints, *servinfo, *p;
+	int sockFd, numBytes;
+	struct addrinfo hints, *servInfo, *p;
 	int rv;
 	char s[INET6_ADDRSTRLEN];
 
@@ -14,29 +14,29 @@ vector<unsigned char> TcpClient::Request(const TcpMsg& tcpMsg, int port) {
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	if ((rv = getaddrinfo(tcpMsg.host.c_str(), std::to_string(port).c_str(), &hints, &servinfo)) != 0) {
+	if ((rv = getaddrinfo(tcpMsg.host.c_str(), std::to_string(port).c_str(), &hints, &servInfo)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
 		throw 1;
 	}
 
 	// loop through all the results and connect to the first we can
-	for(p = servinfo; p != NULL; p = p->ai_next) {
-		if ((sockfd = socket(p->ai_family, p->ai_socktype,
+	for(p = servInfo; p != nullptr; p = p->ai_next) {
+		if ((sockFd = socket(p->ai_family, p->ai_socktype,
 							 p->ai_protocol)) == -1) {
 			perror("client: socket");
 			continue;
 		}
 
-		if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+		if (connect(sockFd, p->ai_addr, p->ai_addrlen) == -1) {
 			perror("client: connect");
-			close(sockfd);
+			close(sockFd);
 			continue;
 		}
 
 		break;
 	}
 
-	if (p == NULL) {
+	if (p == nullptr) {
 		fprintf(stderr, "client: failed to connect\n");
 		throw 2;
 	}
@@ -45,23 +45,23 @@ vector<unsigned char> TcpClient::Request(const TcpMsg& tcpMsg, int port) {
 			  s, sizeof s);
 	printf("client: connecting to %s\n", s);
 
-	freeaddrinfo(servinfo); // all done with this structure
+	freeaddrinfo(servInfo); // all done with this structure
 
-	if (send(sockfd, tcpMsg.msg.data(), tcpMsg.msg.size(), 0) == -1)
+	if (send(sockFd, tcpMsg.msg.data(), tcpMsg.msg.size(), 0) == -1)
 		perror("send");
 
 
 	vector<unsigned char> tmpBuf;
 	tmpBuf.resize(MAXBUFLEN);
 
-	while ((numbytes = recv(sockfd, tmpBuf.data(), tmpBuf.size(), 0)) > 0) {
-		tmpBuf.resize(numbytes);
+	while ((numBytes = recv(sockFd, tmpBuf.data(), tmpBuf.size(), 0)) > 0) {
+		tmpBuf.resize(numBytes);
 		buf.insert(end(buf),begin(tmpBuf),end(tmpBuf));
 		tmpBuf.clear();
 		tmpBuf.resize(MAXBUFLEN);
 	}
 
-	if (numbytes == -1) {
+	if (numBytes == -1) {
 		perror("recv");
 		throw 1;
 	}
